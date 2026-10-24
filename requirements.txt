@@ -1,0 +1,11 @@
+pandas>=2.2
+numpy>=1.26
+duckdb>=1.0
+lightgbm>=4.0
+scikit-learn>=1.4
+scipy>=1.11
+matplotlib>=3.8
+plotly>=5.18
+streamlit>=1.48
+pyarrow>=14.0
+joblib>=1.3

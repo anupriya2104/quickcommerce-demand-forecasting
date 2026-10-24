@@ -1,0 +1,21 @@
+{
+  "horizon_days": 14,
+  "folds": 3,
+  "wmape_seasonal_naive": 0.4028,
+  "wmape_ma28": 0.3029,
+  "wmape_lgbm_no_drivers": 0.2904,
+  "wmape_lgbm_full": 0.2811,
+  "wmape_reduction_vs_naive_pct": 30.2,
+  "bias_lgbm_full_pct": -0.1,
+  "promo_day_wmape_no_drivers": 0.3282,
+  "promo_day_wmape_full": 0.2781,
+  "fill_rate_naive": 0.9895,
+  "fill_rate_lgbm": 0.9905,
+  "stockout_days_naive": 0.0356,
+  "stockout_days_lgbm_same_inventory": 0.0132,
+  "stockout_reduction_at_same_inventory_pct": 62.8,
+  "lost_units_reduction_at_same_inventory_pct": 74.7,
+  "days_cover_naive_iso": 1.009,
+  "days_cover_lgbm": 0.696,
+  "inventory_reduction_at_same_fill_pct": 31.0
+}

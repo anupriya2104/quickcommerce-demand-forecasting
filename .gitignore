@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# large inputs: download or regenerate instead of committing
+data/raw/*.csv
+data/m5/

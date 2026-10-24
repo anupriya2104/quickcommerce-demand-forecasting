@@ -1,0 +1,57 @@
+category,dow,demand_index
+Beverages,0,115.5
+Beverages,1,93.6
+Beverages,2,91.0
+Beverages,3,90.4
+Beverages,4,89.5
+Beverages,5,103.5
+Beverages,6,116.5
+Dairy & Bread,0,101.9
+Dairy & Bread,1,101.5
+Dairy & Bread,2,98.1
+Dairy & Bread,3,98.6
+Dairy & Bread,4,97.8
+Dairy & Bread,5,99.7
+Dairy & Bread,6,102.4
+Frozen & Ice Cream,0,123.5
+Frozen & Ice Cream,1,89.0
+Frozen & Ice Cream,2,84.9
+Frozen & Ice Cream,3,86.1
+Frozen & Ice Cream,4,86.0
+Frozen & Ice Cream,5,105.4
+Frozen & Ice Cream,6,125.1
+Fruits & Veg,0,105.5
+Fruits & Veg,1,98.1
+Fruits & Veg,2,96.3
+Fruits & Veg,3,97.6
+Fruits & Veg,4,96.1
+Fruits & Veg,5,101.1
+Fruits & Veg,6,105.3
+Household,0,106.1
+Household,1,99.3
+Household,2,95.6
+Household,3,95.4
+Household,4,94.6
+Household,5,101.5
+Household,6,107.5
+Personal Care,0,98.7
+Personal Care,1,102.9
+Personal Care,2,100.1
+Personal Care,3,99.0
+Personal Care,4,100.3
+Personal Care,5,99.9
+Personal Care,6,99.2
+Snacks,0,118.6
+Snacks,1,92.5
+Snacks,2,87.3
+Snacks,3,88.6
+Snacks,4,88.2
+Snacks,5,104.9
+Snacks,6,119.8
+Staples,0,94.9
+Staples,1,103.5
+Staples,2,103.0
+Staples,3,102.8
+Staples,4,100.8
+Staples,5,99.1
+Staples,6,95.8

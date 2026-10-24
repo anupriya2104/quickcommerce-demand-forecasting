@@ -11,7 +11,8 @@ expire; under-order and the customer sees "out of stock" and switches apps. The 
 | 1. SQL analytics (`sql/analytics.sql`, DuckDB) | GMV trends, YoY growth, ABC–XYZ segmentation, day-of-week index, promo uplift, festival & rain effects, lost GMV from stockouts | — |
 | 2. Forecasting (`src/forecast.py`) | Error by category and on promo days | Global LightGBM (Tweedie) over all store-SKUs, 3 rolling-origin backtests, 4 baselines, ablation of driver features, censored-demand correction |
 | 3. Inventory simulation | Fill rate, stockout days, days of cover | ABC-tiered order-up-to policy using forecast-error σ, iso-service and iso-inventory comparisons |
-| 4. Dashboard (`app.py`) | KPI tiles, GMV/promo/stockout views | SKU forecast drill-down, live replenishment planner with service-level sliders |
+| 4. Forward forecast (`build_future`) | Upcoming festivals calendar | **Two models:** a 14-day model (uses recent sales, most accurate) and a 90-day model (calendar, festivals, last year, demand level), each with its own honest backtest and an 80% range |
+| 5. Dashboard (`app.py`, "QuickCart Demand Studio") | Full sales history explorer with weekend / festival / promo / stockout markers, GMV/promo/stockout insights | **Predict any day** in the next 90 days with promo and festival switches, 90-day forecast with calendar view, **promo planner** (units *and* revenue impact), **tomorrow's stock plan** with service-level sliders and CSV export |
 
 See **[RESULTS.md](RESULTS.md)** for the numbers (regenerated on every run).
 
@@ -55,6 +56,14 @@ labels in charts say ₹; change them if you present the M5 version.
   the drivers matter exactly when the business is spending on discounts.
 - **Fair inventory comparison.** A better forecast can be cashed in two ways: fewer stockouts at the same stock, or
   less stock at the same service. Both are reported; comparing at equal safety factors would be misleading.
+- **Why two models?** The 14-day model leans on "sales 2 weeks ago", which doesn't exist 60 days out. The 90-day model only
+  uses what is known 90 days ahead. Companies run the same split: a short-range forecast for daily orders, a long-range one for planning.
+- **Upcoming festivals** live in `UPCOMING_FESTIVALS` in `src/forecast.py`, or in `data/raw/upcoming_festivals.csv` (`date,festival_name`).
+- **No hourly forecast:** the data is daily. With hourly order logs, the same approach extends to hourly forecasts for rider and picker staffing.
+- **Why the what-if is valid.** All history-based features look ≥ 14 days back, so for the next 14 days they're already
+  known; only the promo plan and price change in a scenario. Re-predicting with edited promo columns is therefore exactly
+  what the model would see in production.
+- **Units vs revenue.** The what-if shows both, because a discount can lift units and still lose revenue.
 - **ABC–XYZ.** Service targets differ by class: A items (80% of revenue) get 98%, C items 90%.
 
 ## Project layout

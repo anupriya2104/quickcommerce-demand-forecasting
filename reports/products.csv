@@ -1,0 +1,81 @@
+sku_id,sku_name,category,mrp,shelf_life_days
+SKU001,Toned Milk 500ml,Dairy & Bread,86.0,4
+SKU002,Full Cream Milk 1L,Dairy & Bread,82.0,4
+SKU003,Fresh Curd 400g,Dairy & Bread,78.0,4
+SKU004,Paneer 200g,Dairy & Bread,33.0,4
+SKU005,Salted Butter 100g,Dairy & Bread,58.0,4
+SKU006,Brown Bread,Dairy & Bread,76.0,4
+SKU007,White Sandwich Bread,Dairy & Bread,73.0,4
+SKU008,Cheese Slices,Dairy & Bread,37.0,4
+SKU009,Farm Eggs (6),Dairy & Bread,72.0,4
+SKU010,Cow Ghee 500ml,Dairy & Bread,48.0,4
+SKU011,Masala Buttermilk,Dairy & Bread,89.0,4
+SKU012,Sweet Lassi,Dairy & Bread,82.0,4
+SKU013,Onion 1kg,Fruits & Veg,58.0,5
+SKU014,Tomato 500g,Fruits & Veg,50.0,5
+SKU015,Potato 1kg,Fruits & Veg,81.0,5
+SKU016,Banana (6),Fruits & Veg,22.0,5
+SKU017,Apple (4),Fruits & Veg,76.0,5
+SKU018,Coriander Bunch,Fruits & Veg,55.0,5
+SKU019,Green Chilli 100g,Fruits & Veg,60.0,5
+SKU020,Lemon (4),Fruits & Veg,95.0,5
+SKU021,Cucumber 500g,Fruits & Veg,95.0,5
+SKU022,Carrot 500g,Fruits & Veg,73.0,5
+SKU023,Capsicum 250g,Fruits & Veg,43.0,5
+SKU024,Ginger 100g,Fruits & Veg,91.0,5
+SKU025,Garlic 100g,Fruits & Veg,73.0,5
+SKU026,Watermelon,Fruits & Veg,84.0,5
+SKU027,Salted Potato Chips,Snacks,82.0,180
+SKU028,Masala Chips,Snacks,23.0,180
+SKU029,Aloo Bhujia,Snacks,92.0,180
+SKU030,Nachos,Snacks,29.0,180
+SKU031,Salted Peanuts,Snacks,16.0,180
+SKU032,Chocolate Bar,Snacks,22.0,180
+SKU033,Cream Biscuits,Snacks,79.0,180
+SKU034,Instant Noodles,Snacks,67.0,180
+SKU035,Popcorn,Snacks,50.0,180
+SKU036,Namkeen Mix,Snacks,25.0,180
+SKU037,Cookies,Snacks,24.0,180
+SKU038,Protein Bar,Snacks,39.0,180
+SKU039,Cola 750ml,Beverages,30.0,180
+SKU040,Lemon Soda 750ml,Beverages,48.0,180
+SKU041,Mango Drink 1L,Beverages,58.0,180
+SKU042,Orange Juice 1L,Beverages,92.0,180
+SKU043,Packaged Water 1L,Beverages,101.0,180
+SKU044,Cold Coffee,Beverages,108.0,180
+SKU045,Energy Drink,Beverages,78.0,180
+SKU046,Coconut Water,Beverages,49.0,180
+SKU047,Iced Tea,Beverages,51.0,180
+SKU048,Green Tea (25),Beverages,119.0,180
+SKU049,Basmati Rice 1kg,Staples,302.0,180
+SKU050,Wheat Atta 5kg,Staples,266.0,180
+SKU051,Toor Dal 1kg,Staples,88.0,180
+SKU052,Sunflower Oil 1L,Staples,419.0,180
+SKU053,Sugar 1kg,Staples,435.0,180
+SKU054,Salt 1kg,Staples,145.0,180
+SKU055,Poha 500g,Staples,228.0,180
+SKU056,Rava 500g,Staples,73.0,180
+SKU057,Moong Dal 500g,Staples,427.0,180
+SKU058,Besan 500g,Staples,187.0,180
+SKU059,Bath Soap (4),Personal Care,398.0,180
+SKU060,Shampoo 180ml,Personal Care,290.0,180
+SKU061,Toothpaste 150g,Personal Care,499.0,180
+SKU062,Hand Wash,Personal Care,185.0,180
+SKU063,Face Wash,Personal Care,496.0,180
+SKU064,Body Lotion,Personal Care,348.0,180
+SKU065,Sanitary Pads,Personal Care,165.0,180
+SKU066,Deodorant,Personal Care,207.0,180
+SKU067,Dishwash Liquid,Household,394.0,180
+SKU068,Detergent Powder 1kg,Household,151.0,180
+SKU069,Floor Cleaner,Household,250.0,180
+SKU070,Garbage Bags,Household,198.0,180
+SKU071,Tissue Roll (4),Household,172.0,180
+SKU072,Toilet Cleaner,Household,348.0,180
+SKU073,Scrub Pads,Household,317.0,180
+SKU074,Vanilla Ice Cream Tub,Frozen & Ice Cream,152.0,180
+SKU075,Chocolate Cone,Frozen & Ice Cream,140.0,180
+SKU076,Kulfi Stick,Frozen & Ice Cream,229.0,180
+SKU077,Frozen Peas 500g,Frozen & Ice Cream,105.0,180
+SKU078,Frozen Paratha,Frozen & Ice Cream,188.0,180
+SKU079,Veg Nuggets,Frozen & Ice Cream,319.0,180
+SKU080,French Fries 400g,Frozen & Ice Cream,322.0,180

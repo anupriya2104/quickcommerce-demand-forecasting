@@ -13,7 +13,7 @@ DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]  # DuckDB DAYOFWEEK: 0 =
 
 
 def run_sql(con):
-    text = (ROOT / "sql" / "analytics.sql").read_text()
+    text = (ROOT / "sql" / "analytics.sql").read_text(encoding="utf-8")
     blocks = re.split(r"--\s*name:\s*(\w+)", text)[1:]
     results = {}
     for name, sql in zip(blocks[::2], blocks[1::2]):
@@ -99,6 +99,8 @@ def main():
     for k, v in t.items():
         con.register(k, v)
     r = run_sql(con)
+    t["products"].to_csv(REPORTS / "products.csv", index=False)  # names for the dashboard
+    t["stores"].to_csv(REPORTS / "stores.csv", index=False)
     charts(r)
 
     k = r["kpi_overview"].iloc[0]
@@ -116,7 +118,7 @@ def main():
         "top_yoy_category": r["category_yoy_growth"].iloc[0].category,
         "top_yoy_pct": float(r["category_yoy_growth"].iloc[0].yoy_growth_pct),
     }
-    (REPORTS / "analytics_summary.json").write_text(json.dumps(insights, indent=2))
+    (REPORTS / "analytics_summary.json").write_text(json.dumps(insights, indent=2), encoding="utf-8")
     print(json.dumps(insights, indent=2))
 
 

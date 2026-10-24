@@ -19,6 +19,8 @@
 | LightGBM without promo/festival drivers | 29.0% |
 | **LightGBM, full** | **28.1%** (bias -0.1%) |
 
+90-day long-range model: WMAPE 28.1% vs 39.4% for "same day last year" (90-day hold-out).
+
 Promo-day WMAPE: 32.8% without driver features → 27.8% with them.
 
 ## Replenishment simulation (28 held-out days, lead time 1 day, ABC service targets)
@@ -29,4 +31,5 @@ Promo-day WMAPE: 32.8% without driver features → 27.8% with them.
 - Built an end-to-end demand forecasting system for quick-commerce dark stores on **263K+ store-SKU-days**, with DuckDB SQL analytics for ABC–XYZ segmentation, promo uplift, festival/weather effects and stockout-driven lost GMV (₹21L).
 - Trained a global LightGBM (Tweedie) model with lag, rolling, calendar, promo and festival features and censored-demand correction; **cut 14-day WMAPE by 30%** (40% → 28%) over a seasonal-naive baseline across 3 rolling backtests.
 - Converted forecasts into an ABC-tiered order-up-to replenishment policy; simulation showed **63% fewer stockouts at equal inventory**, or **31% less stock at the same 99% fill rate**.
-- Shipped a Streamlit dashboard for GMV/stockout KPIs, SKU-level forecast drill-down and a service-level-driven replenishment planner.
+- Built a short-range (14-day) and long-range (90-day, festival-aware) forecasting setup; the 90-day model beat "same day last year" by 29% on a 90-day hold-out.
+- Shipped an interactive Streamlit app: predict any product-day with promo/festival switches, a promo planner showing unit *and* revenue impact, a sales-history explorer, and a service-level-driven stock plan.

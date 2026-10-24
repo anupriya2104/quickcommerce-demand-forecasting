@@ -17,5 +17,7 @@
   "lost_units_reduction_at_same_inventory_pct": 74.7,
   "days_cover_naive_iso": 1.009,
   "days_cover_lgbm": 0.696,
+  "wmape_long_range_90d": 0.2806,
+  "wmape_same_day_last_year": 0.3935,
   "inventory_reduction_at_same_fill_pct": 31.0
 }

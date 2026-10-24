@@ -21,7 +21,7 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-from data import FIG, REPORTS, ROOT, load_tables
+from data import FIG, RAW, REPORTS, ROOT, load_tables
 from viz import MUTED, SERIES, plt, save
 
 H = 14  # forecast horizon in days
@@ -267,6 +267,101 @@ def charts(bt, overall, by_cat, model, inv):
     save(fig, FIG / "10_inventory_simulation.png")
 
 
+# ---------------------------------------------------------------------------------------------
+# Long-range model (16-90 days ahead). Short lags are not available that far out, so it uses only
+# features known 90 days in advance: calendar, festivals, planned promos/price, same day last year,
+# and the demand level up to 90 days before the target date.
+# ---------------------------------------------------------------------------------------------
+LONG_H = 90
+LONG_FEATS = ["lag_364", "lr_mean_28", "lr_mean_91", "lr_std_91", "dow", "dom", "month", "weekofyear", "is_weekend",
+              "store_id_cat", "sku_id_cat", "category_cat", *DRIVER_FEATS]
+
+# Known upcoming festivals (used only when they fall inside the forecast window).
+# Add a CSV data/raw/upcoming_festivals.csv with columns date,festival_name to override.
+UPCOMING_FESTIVALS = {"2025-08-09": "Raksha Bandhan", "2025-08-15": "Independence Day", "2025-08-16": "Janmashtami",
+                      "2025-08-27": "Ganesh Chaturthi", "2025-10-02": "Dussehra / Gandhi Jayanti",
+                      "2025-10-20": "Diwali", "2025-12-25": "Christmas", "2025-12-31": "New Year's Eve"}
+
+
+def add_long_features(s):
+    sh = s.groupby(["store_id", "sku_id"], sort=False)["demand"].shift(LONG_H)
+    sg = sh.groupby([s.store_id, s.sku_id])
+    s["lr_mean_28"] = sg.transform(lambda x: x.rolling(28, min_periods=14).mean())
+    s["lr_mean_91"] = sg.transform(lambda x: x.rolling(91, min_periods=45).mean())
+    s["lr_std_91"] = sg.transform(lambda x: x.rolling(91, min_periods=45).std())
+    return s
+
+
+def long_backtest(s):
+    """Hold out the last 90 days, train on everything before, forecast all 90 days at once."""
+    end = s.date.max()
+    test_start = end - pd.Timedelta(days=LONG_H - 1)
+    train = s[(s.date < test_start) & s.lr_mean_91.notna()]
+    test = s[s.date >= test_start].copy()
+    m = fit_lgb(train, LONG_FEATS, rounds=500)
+    test["p_long"] = m.predict(test[LONG_FEATS])
+    test["p_last_year"] = test["lag_364"]
+    e = test[test.stockout_flag == 0]
+    ly = e.dropna(subset=["p_last_year"])
+    res = {"wmape_long": wmape(e.demand, e.p_long), "wmape_same_day_last_year": wmape(ly.demand, ly.p_last_year),
+           "bias_long": bias(e.demand, e.p_long)}
+    sig = (e.demand - e.p_long).groupby([e.store_id, e.sku_id]).std().rename("sigma_long").reset_index()
+    return res, sig, test
+
+
+def upcoming_calendar(t, fdates):
+    cal = t["calendar"]
+    cal_f = pd.DataFrame({"date": fdates})
+    for c in cal.columns:
+        if c != "date":
+            cal_f[c] = None if c == "festival_name" else 0
+    up = UPCOMING_FESTIVALS
+    custom = RAW / "upcoming_festivals.csv"
+    if custom.exists():
+        cf = pd.read_csv(custom)
+        up = dict(zip(cf.date.astype(str), cf.festival_name))
+    names = cal_f.date.dt.strftime("%Y-%m-%d").map(up)
+    cal_f["festival_name"] = names
+    cal_f["is_festival"] = names.notna().astype(int)
+    return cal_f
+
+
+def build_future(t, short_model, long_model, bt, abc, sig_long):
+    """
+    Forecast the next 90 days for every store-SKU.
+      days 1-14  -> short-range model (uses recent sales, most accurate)
+      days 15-90 -> long-range model (calendar, festivals, last year, demand level)
+    The promotion plan defaults to no promos at regular price; the app lets users edit it and
+    re-predicts with the saved models.
+    """
+    sales = t["sales"]
+    last = sales.date.max()
+    fdates = pd.date_range(last + pd.Timedelta(days=1), periods=LONG_H, freq="D")
+    recent = sales[sales.date > last - pd.Timedelta(days=28)]
+    regular = recent.groupby(["store_id", "sku_id"]).selling_price.max().rename("regular_price").reset_index()
+    fut = regular.merge(pd.DataFrame({"date": fdates}), how="cross")
+    fut = fut.assign(units_sold=np.nan, selling_price=fut.regular_price, discount_pct=0.0, on_promo=0, stockout_flag=0)
+    fut = fut.drop(columns="regular_price")
+    t2 = {**t, "sales": pd.concat([sales, fut], ignore_index=True),
+          "calendar": pd.concat([t["calendar"], upcoming_calendar(t, fdates)], ignore_index=True)}
+    s = add_long_features(build_features(t2))
+    f = s[s.date > last].copy()
+    f["horizon_day"] = (f.date - last).dt.days
+    f["forecast_long"] = long_model.predict(f[LONG_FEATS])
+    f["forecast_short"] = np.where(f.horizon_day <= H, short_model.predict(f[FULL_FEATS]), np.nan)
+    f["model_used"] = np.where(f.horizon_day <= H, "short", "long")
+    f["forecast"] = np.where(f.horizon_day <= H, f.forecast_short, f.forecast_long)
+    # price_index = price / max historical price of that store-SKU -> keep the denominator for what-if edits
+    f["max_price"] = s.groupby(["store_id", "sku_id"]).selling_price.transform("max").loc[f.index]
+    f["regular_price"] = f["selling_price"]
+    sig = (bt.demand - bt.p_lgbm_full).where(bt.stockout_flag == 0).groupby([bt.store_id, bt.sku_id]).std().rename("sigma_short").reset_index()
+    f = (f.merge(sig, on=["store_id", "sku_id"], how="left").merge(sig_long, on=["store_id", "sku_id"], how="left")
+         .merge(abc[["sku_id", "abc_class", "xyz_class"]], on="sku_id", how="left"))
+    f["sigma"] = np.where(f.horizon_day <= H, f.sigma_short, f.sigma_long)
+    hist = s[s.date <= last]
+    return f, last, hist
+
+
 def main():
     t = load_tables()
     abc = pd.read_csv(REPORTS / "sql_abc_xyz.csv")
@@ -288,6 +383,26 @@ def main():
     final.save_model(str(ROOT / "models" / "lgbm_demand.txt"))
     joblib.dump({"features": FULL_FEATS, "horizon": H}, ROOT / "models" / "meta.joblib")
     charts(bt, overall, by_cat, final, inv)
+
+    # long-range model: honest 90-day backtest, then refit on everything
+    s_long = add_long_features(s.copy())
+    long_res, sig_long, _ = long_backtest(s_long)
+    print("long-range backtest:", {k: round(v, 4) for k, v in long_res.items()})
+    long_final = fit_lgb(s_long[s_long.lr_mean_91.notna()], LONG_FEATS, rounds=500)
+    long_final.save_model(str(ROOT / "models" / "lgbm_demand_long.txt"))
+    joblib.dump({"features": FULL_FEATS, "long_features": LONG_FEATS, "horizon": H, "long_horizon": LONG_H},
+                ROOT / "models" / "meta.joblib")
+
+    # forward-looking: next 90 days for every store-SKU (what the dashboard plans with)
+    future, last, hist = build_future(t, final, long_final, bt, abc, sig_long)
+    keep_f = ["date", "horizon_day", "model_used", "store_id", "sku_id", "category", "abc_class", "xyz_class", "festival_name",
+              "forecast", "forecast_short", "forecast_long", "sigma", "regular_price", "max_price", *FULL_FEATS, *LONG_FEATS]
+    future[list(dict.fromkeys(keep_f))].to_parquet(REPORTS / "future_features.parquet", index=False)
+    hist[["date", "store_id", "sku_id", "category", "units_sold", "demand", "selling_price", "discount_pct", "on_promo",
+          "stockout_flag", "is_festival", "festival_name"]].to_parquet(REPORTS / "sales_history.parquet", index=False)
+    print(f"future forecast: {future.date.min().date()} -> {future.date.max().date()}, "
+          f"{future[['store_id', 'sku_id']].drop_duplicates().shape[0]} store-SKUs, "
+          f"festivals in window: {sorted(future.festival_name.dropna().unique())}")
 
     keep = ["date", "store_id", "sku_id", "category", "fold", "on_promo", "stockout_flag", "demand", *MODELS]
     bt[keep].to_parquet(REPORTS / "backtest_predictions.parquet", index=False)
@@ -312,9 +427,11 @@ def main():
         "lost_units_reduction_at_same_inventory_pct": round(100 * (1 - (1 - inv["lgbm_iso_inv"]["fill_rate"]) / (1 - inv["naive"]["fill_rate"])), 1),
         # Fair comparison 2: same fill rate -> how much less stock?
         "days_cover_naive_iso": round(inv["naive_iso"]["days_of_cover"], 3), "days_cover_lgbm": round(inv["lgbm"]["days_of_cover"], 3),
+        "wmape_long_range_90d": round(long_res["wmape_long"], 4),
+        "wmape_same_day_last_year": round(long_res["wmape_same_day_last_year"], 4),
         "inventory_reduction_at_same_fill_pct": round(100 * (1 - inv["lgbm"]["days_of_cover"] / inv["naive_iso"]["days_of_cover"]), 1),
     }
-    (REPORTS / "model_summary.json").write_text(json.dumps(summary, indent=2))
+    (REPORTS / "model_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
 
 

@@ -4,3 +4,4 @@ __pycache__/
 # large inputs: download or regenerate instead of committing
 data/raw/*.csv
 data/m5/
+.venv/

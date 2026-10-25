@@ -79,17 +79,43 @@ def load_models():
             lgb.Booster(model_file=str(ROOT / "models" / "lgbm_demand_long.txt")), meta)
 
 
-@st.cache_data
+def _slim(df):
+    """Shrink memory: categorical ids, float32 numbers (the free hosting tier has 512 MB)."""
+    for c in df.columns:
+        if df[c].dtype == object and c in ("store_id", "sku_id", "category", "festival_name", "model_used"):
+            df[c] = df[c].astype("category")
+        elif df[c].dtype == "float64":
+            df[c] = df[c].astype("float32")
+        elif df[c].dtype == "int64":
+            df[c] = pd.to_numeric(df[c], downcast="integer")
+    return df
+
+
+@st.cache_resource  # shared, not copied on every click (cache_data would duplicate the tables each rerun)
 def load_data():
     def j(f):
         return json.loads((R / f).read_text(encoding="utf-8"))
     names = pd.read_csv(R / "products.csv") if (R / "products.csv").exists() else None
     stores = pd.read_csv(R / "stores.csv") if (R / "stores.csv").exists() else None
-    return (pd.read_parquet(R / "future_features.parquet"), pd.read_parquet(R / "sales_history.parquet"),
-            pd.read_parquet(R / "backtest_predictions.parquet"), j("analytics_summary.json"), j("model_summary.json"),
-            pd.read_csv(R / "sql_abc_xyz.csv"), pd.read_csv(R / "sql_monthly_gmv_by_category.csv", parse_dates=["month"]),
+    fut = _slim(pd.read_parquet(R / "future_features.parquet"))
+    return (fut, _slim(pd.read_parquet(R / "backtest_predictions.parquet")), j("analytics_summary.json"),
+            j("model_summary.json"), pd.read_csv(R / "sql_abc_xyz.csv"),
+            pd.read_csv(R / "sql_monthly_gmv_by_category.csv", parse_dates=["month"]),
             pd.read_csv(R / "sql_promo_uplift.csv"), pd.read_csv(R / "sql_stockout_by_store.csv"),
             pd.read_csv(R / "model_comparison.csv"), names, stores)
+
+
+@st.cache_resource
+def history_span():
+    d = pd.read_parquet(R / "sales_history.parquet", columns=["date"]).date
+    return d.min(), d.max()
+
+
+@st.cache_data(max_entries=8)
+def load_history(store_id, sku_id):
+    """Read only the selected product's 18 months from disk (parquet filter), not all 262K rows."""
+    return pd.read_parquet(R / "sales_history.parquet",
+                           filters=[("store_id", "==", store_id), ("sku_id", "==", sku_id)]).sort_values("date").reset_index(drop=True)
 
 
 if not (R / "future_features.parquet").exists() or not (ROOT / "models" / "lgbm_demand_long.txt").exists():
@@ -98,7 +124,8 @@ if not (R / "future_features.parquet").exists() or not (ROOT / "models" / "lgbm_
 
 short_m, long_m, META = load_models()
 SHORT_F, LONG_F, H = META["features"], META["long_features"], META["horizon"]
-fut, hist, bt, A, M, abc, gmv, promo, oos, comp, names, stores = load_data()
+fut, bt, A, M, abc, gmv, promo, oos, comp, names, stores = load_data()
+HIST_MIN, HIST_MAX = history_span()
 name_of = dict(zip(names.sku_id, names.sku_name)) if names is not None else {}
 store_name = dict(zip(stores.store_id, stores.locality)) if stores is not None else {}
 
@@ -149,7 +176,7 @@ with st.sidebar:
     skus = sorted(fut[fut.category == cat].sku_id.unique(), key=lambda s: name_of.get(s, s))
     sku = st.selectbox("Product", skus, format_func=lambda s: name_of.get(s, s))
     pf = fut[(fut.store_id == store) & (fut.sku_id == sku)].sort_values("date").reset_index(drop=True)
-    ph = hist[(hist.store_id == store) & (hist.sku_id == sku)].sort_values("date").reset_index(drop=True)
+    ph = load_history(store, sku)
     cls = abc.loc[abc.sku_id == sku, ["abc_class", "xyz_class"]].iloc[0]
     steadiness = {"X": "steady", "Y": "variable", "Z": "erratic"}[cls.xyz_class]
     st.markdown(f"""<div class="product-card"><div class="emoji">{emoji(cat)}</div>
@@ -165,7 +192,7 @@ first, last_f = fut.date.min(), fut.date.max()
 st.markdown(f"""<div class="hero"><h1>🛒 QuickCart Demand Studio</h1>
 <p>Predict what will sell, when, and how much to stock — for every product in every dark store.</p>
 <span class="chip">📍 {A['stores']} dark stores</span><span class="chip">🧺 {A['skus']} products</span>
-<span class="chip">📜 history {hist.date.min():%b %Y} – {hist.date.max():%b %Y}</span>
+<span class="chip">📜 history {HIST_MIN:%b %Y} – {HIST_MAX:%b %Y}</span>
 <span class="chip">🔮 forecasts to {last_f:%d %b %Y}</span></div>""", unsafe_allow_html=True)
 k = st.columns(5)
 k[0].metric("Sales value (GMV)", f"₹{A['gmv_crore']:.1f} Cr")
